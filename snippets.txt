@@ -1,0 +1,427 @@
+
+Depois de iniciar o projeto instalar:
+
+expo install react-navigation react-navigation-tabs react-native-gesture-handler react-native-reanimated react-native-screens react-native-safe-area-context @react-native-community/masked-view react-navigation-stack
+
+
+
+-----------------------------
+
+
+COntacts.js
+
+import React from 'react';
+import {
+  StyleSheet,
+  Text,
+  View,
+  FlatList,
+  ActivityIndicator,
+} from 'react-native';
+
+import ContactListItem from '../components/ContactListItem';
+
+import { fetchContacts } from '../utils/api';
+
+const keyExtractor = ({ phone }) => phone;
+
+export default class Contacts extends React.Component {
+  state = {
+    contacts: [],
+    loading: true,
+    error: false,
+  };
+
+  async componentDidMount() {
+    try {
+      const contacts = await fetchContacts();
+
+      this.setState({
+        contacts,
+        loading: false,
+        error: false,
+      });
+    } catch (e) {
+      this.setState({
+        loading: false,
+        error: true,
+      });
+    }
+  }
+
+  renderContact = ({ item }) => {
+    const { name, avatar, phone } = item;
+
+    return (
+      <ContactListItem name={name} avatar={avatar} phone={phone} />
+    );
+  };
+
+  render() {
+    const { loading, contacts, error } = this.state;
+
+    const contactsSorted = contacts.sort((a, b) =>
+      a.name.localeCompare(b.name),
+    );
+
+    return (
+      <View style={styles.container}>
+        {loading && <ActivityIndicator size="large" />}
+        {error && <Text>Error...</Text>}
+        {!loading &&
+          !error && (
+            <FlatList
+              data={contactsSorted}
+              keyExtractor={keyExtractor}
+              renderItem={this.renderContact}
+            />
+          )}
+      </View>
+    );
+  }
+}
+
+const styles = StyleSheet.create({
+  container: {
+    backgroundColor: 'white',
+    justifyContent: 'center',
+    flex: 1,
+  },
+});
+
+
+----------------
+
+PROFILE.js
+import React from 'react';
+import { StyleSheet, View } from 'react-native';
+
+import ContactThumbnail from '../components/ContactThumbnail';
+import DetailListItem from '../components/DetailListItem';
+
+import { fetchRandomContact } from '../utils/api';
+
+import colors from '../utils/colors';
+
+export default class Profile extends React.Component {
+  state = {
+    contact: {},
+  };
+
+  async componentDidMount() {
+    const contact = await fetchRandomContact();
+
+    this.setState({
+      contact,
+    });
+  }
+
+  render() {
+    const { avatar, name, email, phone, cell } = this.state.contact;
+
+    return (
+      <View style={styles.container}>
+        <View style={styles.avatarSection}>
+          <ContactThumbnail
+            avatar={avatar}
+            name={name}
+            phone={phone}
+          />
+        </View>
+        <View style={styles.detailsSection}>
+          <DetailListItem
+            icon="mail"
+            title="Email"
+            subtitle={email}
+          />
+          <DetailListItem
+            icon="phone"
+            title="Work"
+            subtitle={phone}
+          />
+          <DetailListItem
+            icon="smartphone"
+            title="Personal"
+            subtitle={cell}
+          />
+        </View>
+      </View>
+    );
+  }
+}
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+  },
+  avatarSection: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.blue,
+  },
+  detailsSection: {
+    flex: 1,
+    backgroundColor: 'white',
+  },
+});
+
+---------------
+
+Favorites:
+
+
+import React from 'react';
+import {
+  StyleSheet,
+  Text,
+  View,
+  FlatList,
+  ActivityIndicator,
+} from 'react-native';
+
+import { fetchContacts } from '../utils/api';
+
+import ContactThumbnail from '../components/ContactThumbnail';
+
+const keyExtractor = ({ phone }) => phone;
+
+export default class Favorites extends React.Component {
+  static navigationOptions = {
+    title: 'Favorites',
+  };
+
+  state = {
+    contacts: [],
+    loading: true,
+    error: false,
+  };
+
+  async componentDidMount() {
+    try {
+      const contacts = await fetchContacts();
+
+      this.setState({
+        contacts,
+        loading: false,
+        error: false,
+      });
+    } catch (e) {
+      this.setState({
+        loading: false,
+        error: true,
+      });
+    }
+  }
+
+  renderFavoriteThumbnail = ({ item }) => {
+    const { navigation: { navigate } } = this.props;
+    const { avatar } = item;
+
+    return (
+      <ContactThumbnail
+        avatar={avatar}
+        onPress={() => navigate('Profile', { contact: item })}
+      />
+    );
+  };
+
+  render() {
+    const { loading, contacts, error } = this.state;
+    const favorites = contacts.filter(contact => contact.favorite);
+
+    return (
+      <View style={styles.container}>
+        {loading && <ActivityIndicator size="large" />}
+        {error && <Text>Error...</Text>}
+
+        {!loading &&
+          !error && (
+            <FlatList
+              data={favorites}
+              keyExtractor={keyExtractor}
+              numColumns={3}
+              contentContainerStyle={styles.list}
+              renderItem={this.renderFavoriteThumbnail}
+            />
+          )}
+      </View>
+    );
+  }
+}
+
+const styles = StyleSheet.create({
+  container: {
+    backgroundColor: 'white',
+    justifyContent: 'center',
+    flex: 1,
+  },
+  list: {
+    alignItems: 'center',
+  },
+});
+
+------
+User.js:
+
+
+import React from 'react';
+import {
+  StyleSheet,
+  Text,
+  View,
+  ActivityIndicator,
+} from 'react-native';
+
+import ContactThumbnail from '../components/ContactThumbnail';
+
+import colors from '../utils/colors';
+import { fetchUserContact } from '../utils/api';
+
+export default class User extends React.Component {
+  static navigationOptions = {
+    title: 'Me',
+    headerTintColor: 'white',
+    headerStyle: {
+      backgroundColor: colors.blue,
+    },
+  };
+
+  state = {
+    user: [],
+    loading: true,
+    error: false,
+  };
+
+  async componentDidMount() {
+    try {
+      const user = await fetchUserContact();
+
+      this.setState({
+        user,
+        loading: false,
+        error: false,
+      });
+    } catch (e) {
+      this.setState({
+        loading: false,
+        error: true,
+      });
+    }
+  }
+
+  render() {
+    const { loading, user, error } = this.state;
+    const { avatar, name, phone } = user;
+
+    return (
+      <View style={styles.container}>
+        {loading && <ActivityIndicator size="large" />}
+        {error && <Text>Error...</Text>}
+
+        {!loading && (
+          <ContactThumbnail
+            avatar={avatar}
+            name={name}
+            phone={phone}
+          />
+        )}
+      </View>
+    );
+  }
+}
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.blue,
+  },
+});
+
+
+
+
+----------------------
+
+Final routes:
+
+import React from "react";
+import { createAppContainer } from 'react-navigation';
+import { createStackNavigator } from 'react-navigation-stack';
+
+import Contacts from './screens/Contacts';
+import Profile from './screens/Profile';
+import User from './screens/User';
+import Favorites from './screens/Favorites';
+import colors from './utils/colors';
+import { createBottomTabNavigator } from 'react-navigation-tabs';
+import { MaterialIcons } from "@expo/vector-icons";
+import { color } from 'react-native-reanimated';
+
+
+const getTabBarIcon = icon => ({ tintColor }) => (
+  <MaterialIcons name={icon} size={26} style={{ color: tintColor }} />
+);
+
+
+
+ const ContactsScreens = createStackNavigator(
+    {
+      Contacts,
+      Profile,
+    },
+    {
+      initialRouteName: "Contacts",
+      navigationOptions:{
+          tabBarIcon: getTabBarIcon('list')
+      }
+    }
+);
+ const FavoritesScreens = createStackNavigator(
+    {
+      Favorites,
+    },
+    {
+      initialRouteName: "Favorites",
+      navigationOptions:{
+          tabBarIcon: getTabBarIcon('star')
+      }
+    }
+);
+ const UserScreens = createStackNavigator(
+    {
+      User,
+    },
+    {
+      initialRouteName: "User",
+      navigationOptions:{
+          tabBarIcon: getTabBarIcon('person')
+      }
+    }
+);
+
+
+
+
+
+const TabNavigator = createBottomTabNavigator({
+    Contacts: ContactsScreens,
+    Favorites: FavoritesScreens,
+    User: UserScreens,
+}, {
+    initialRouteName: "Contacts",
+    tabBarPosition: "bottom",
+    tabBarOptions:{
+        style:{
+            backgroundColor: colors.greyLight,
+        },
+        showIcon: true,
+        showLabel: false,
+        activeTintColor: colors.blue,
+        inactiveTintColor: colors.greyDark,
+    }
+})
+
+export default createAppContainer(TabNavigator);
