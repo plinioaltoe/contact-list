@@ -12,11 +12,12 @@ export default class Profile extends React.Component {
   static navigationOptions = ({ navigation: { state: { params } } }) => {
     const { contact: { name } } = params
     return {
+      name: "Profile",
       title: name.split(' ')[0],
       headerTintColor: "white",
       headerStyle: {
-        backgroundColor: colors.blue
-      }
+        backgroundColor: colors.blue,
+      },
     }
   }
 
